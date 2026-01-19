@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quiet Breathwork</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app" aria-live="polite">
+    <header class="app__header">
+      <p class="app__eyebrow">Quiet Breathwork</p>
+      <h1 class="app__title">Settle into a steady rhythm</h1>
+      <p class="app__subtitle">Minimal breathwork sessions inspired by onsen calm.</p>
+    </header>
+
+    <section class="app__panel" aria-label="Breathing controls">
+      <div class="field">
+        <label for="preset" class="field__label">Breathing preset</label>
+        <select id="preset" class="field__control" aria-label="Breathing preset">
+          <option value="box">Box breathing (4-4-4-4)</option>
+          <option value="478">4-7-8 breathing</option>
+          <option value="sigh">Physiological sigh</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="cycles" class="field__label">Cycles</label>
+        <select id="cycles" class="field__control" aria-label="Cycle count"></select>
+      </div>
+      <div class="toggles">
+        <label class="toggle">
+          <input type="checkbox" id="sound-toggle" aria-label="Toggle sound cues" />
+          <span>Sound cues</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="vibration-toggle" aria-label="Toggle vibration" />
+          <span>Vibration</span>
+        </label>
+      </div>
+      <div class="buttons">
+        <button id="start" class="button button--primary" aria-label="Start session">Start</button>
+        <button id="pause" class="button" aria-label="Pause session" disabled>Pause</button>
+        <button id="reset" class="button" aria-label="Reset session">Reset</button>
+      </div>
+    </section>
+
+    <section class="app__visual" aria-label="Breathing visualization">
+      <div class="circle" aria-hidden="true">
+        <div class="circle__inner"></div>
+      </div>
+      <div class="status">
+        <p class="status__phase" id="phase-label">Ready</p>
+        <p class="status__countdown" id="countdown">0</p>
+        <p class="status__cycles">Cycles completed: <span id="cycle-count">0</span></p>
+        <p class="status__prep" id="prep-label" aria-live="polite"></p>
+      </div>
+    </section>
+  </main>
+  <footer class="app__footer">
+    <p>Open the window, soften your gaze, and breathe.</p>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>
