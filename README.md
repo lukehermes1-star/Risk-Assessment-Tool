@@ -1,32 +1,45 @@
-# Quiet Breathwork
+# Risk Workshop Rater
 
-Quiet Breathwork is a static, onsen-inspired breathing companion built with plain HTML, CSS, and vanilla JavaScript. It offers calm visuals, gentle pacing, and soft cues for focus.
+A static workshop tool to rate risk events as **Inherent** or **Residual** using a **5×5 likelihood/consequence matrix**.
 
-## How to run
+## Workshop flow
 
-Open `index.html` directly in your browser. No server or build step is required.
+1. Select rating mode (Inherent or Residual).
+2. Select likelihood score (1–5).
+3. Select primary driver of risk:
+   - Member
+   - Reputation
+   - Investment | Impact
+   - Financial (corporate)
+   - Regulatory
+   - People
+   - Strategic
+4. Select consequence level (I–V) based on the chosen driver.
+5. Review calculated score and band.
 
-## Breathing modes
+## Scoring model
 
-- **Box breathing**: inhale 4s, hold 4s, exhale 4s, hold 4s
-- **4-7-8**: inhale 4s, hold 7s, exhale 8s
-- **Physiological sigh**: inhale 2s, inhale 1s, exhale 6s
+- `Score = Likelihood × Consequence`
+- Bands:
+  - Low: 1–5
+  - Moderate: 6–10
+  - High: 11–15
+  - Extreme: 16–25
 
-## Adjusting timings
+## Matrix source notes
 
-All timing logic lives in `app.js`. Update the `presets` object to change phase durations or add new presets:
+The consequence descriptions are mapped from the provided consequence table image, normalized into concise workshop-ready text for each driver and level.
 
-```js
-const presets = {
-  box: {
-    phases: [
-      { label: "Inhale", type: "inhale", duration: 4 },
-      { label: "Hold", type: "hold-high", duration: 4 },
-      { label: "Exhale", type: "exhale", duration: 4 },
-      { label: "Hold", type: "hold-low", duration: 4 }
-    ]
-  }
-};
-```
+## Run locally
 
-You can also change the preparation countdown by adjusting `prepSeconds` near the top of `app.js`.
+Open `index.html` in any browser.
+
+
+## Likelihood reference included
+
+The app now includes the workshop likelihood reference table:
+- Almost Certain: at least once per year
+- Likely: approximately once every 3 years
+- Possible: approximately once every 10 years
+- Unlikely: approximately once every 20 years
+- Rare: highly unusual and largely unexpected (e.g. once in 100 years)
