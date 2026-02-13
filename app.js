@@ -1,279 +1,353 @@
-const presets = {
-  box: {
-    name: "Box breathing",
-    phases: [
-      { label: "Inhale", type: "inhale", duration: 4 },
-      { label: "Hold", type: "hold-high", duration: 4 },
-      { label: "Exhale", type: "exhale", duration: 4 },
-      { label: "Hold", type: "hold-low", duration: 4 }
+const modeOptions = document.getElementById("mode-options");
+const likelihoodOptions = document.getElementById("likelihood-options");
+const likelihoodTableBody = document.getElementById("likelihood-table-body");
+const driverOptions = document.getElementById("driver-options");
+const consequenceOptions = document.getElementById("consequence-options");
+const consequenceHint = document.getElementById("consequence-hint");
+const resultSummary = document.getElementById("result-summary");
+const resultScore = document.getElementById("result-score");
+const resultBand = document.getElementById("result-band");
+const resultDetail = document.getElementById("result-detail");
+const matrixWrap = document.getElementById("matrix-wrap");
+const resetButton = document.getElementById("reset");
+
+const ratingModes = [
+  { key: "inherent", label: "Inherent risk" },
+  { key: "residual", label: "Residual risk" }
+];
+
+const likelihoodScale = [
+  {
+    value: 5,
+    label: "Almost Certain",
+    description: "The event is likely to occur at least once per year."
+  },
+  {
+    value: 4,
+    label: "Likely",
+    description: "The event may occur approximately once every 3 years."
+  },
+  {
+    value: 3,
+    label: "Possible",
+    description: "The event may occur approximately once every 10 years."
+  },
+  {
+    value: 2,
+    label: "Unlikely",
+    description: "The event may occur approximately once every 20 years."
+  },
+  {
+    value: 1,
+    label: "Rare",
+    description: "The event would be highly unusual and largely unexpected (e.g. once in 100 years)."
+  }
+];
+
+const consequenceLevels = [
+  { value: 1, tag: "I", name: "Insignificant" },
+  { value: 2, tag: "II", name: "Minor" },
+  { value: 3, tag: "III", name: "Moderate" },
+  { value: 4, tag: "IV", name: "Major" },
+  { value: 5, tag: "V", name: "Severe" }
+];
+
+const drivers = [
+  {
+    key: "member",
+    label: "Member",
+    levels: [
+      "Negligible impact – 0.5% or less of members dissatisfied.",
+      "Some members (over 0.5% to 3%) dissatisfied with products/services.",
+      "Select members (over 3% to 10%) dissatisfied with products/services.",
+      "Large portion of members (over 10% to 30%) dissatisfied or outcomes not met for one year.",
+      "Significant portion (over 30%) dissatisfied or outcomes not met for two years."
     ]
   },
-  "478": {
-    name: "4-7-8",
-    phases: [
-      { label: "Inhale", type: "inhale", duration: 4 },
-      { label: "Hold", type: "hold-high", duration: 7 },
-      { label: "Exhale", type: "exhale", duration: 8 }
+  {
+    key: "reputation",
+    label: "Reputation",
+    levels: [
+      "Some public criticism with little follow-up impact on confidence.",
+      "Adverse short-term concerns impacting confidence.",
+      "Public concerns requiring a few months of repair to confidence.",
+      "Public concerns requiring best part of a year to repair confidence.",
+      "Public outcry / grievances requiring several years of repair to confidence."
     ]
   },
-  sigh: {
-    name: "Physiological sigh",
-    phases: [
-      { label: "Inhale", type: "inhale", duration: 2 },
-      { label: "Inhale", type: "inhale", duration: 1 },
-      { label: "Exhale", type: "exhale", duration: 6 }
+  {
+    key: "investment",
+    label: "Investment | Impact",
+    levels: [
+      "Median or higher investment performance relative to peers.",
+      "Below median investment performance over a 5-year period.",
+      "Bottom quartile performance relative to peers over 5 years.",
+      "Deliver poor investment performance first time with limited recovery in 12 months.",
+      "Deliver poor investment performance twice consecutively and/or significant IMA breach."
+    ]
+  },
+  {
+    key: "financial",
+    label: "Financial (corporate)",
+    levels: [
+      "Less than $25k.",
+      "Over $25k to $100k.",
+      "Over $100k to $500k.",
+      "Over $500k to $1 million.",
+      "Over $1 million."
+    ]
+  },
+  {
+    key: "regulatory",
+    label: "Regulatory",
+    levels: [
+      "Rectification via managerial action; no regulator engagement.",
+      "Rectification via managerial intervention with no/minimal regulator engagement.",
+      "Rectification managed with regulator action and reporting.",
+      "Increasing/frequent regulator interactions, investigations, onsite engagements.",
+      "Regulator intervention/enforcement including restrictions and significant fines."
+    ]
+  },
+  {
+    key: "people",
+    label: "People",
+    levels: [
+      "OHS incident requiring first aid; no workdays lost and/or turnover >5%.",
+      "WHS injury requiring treatment and up to 5 days off and/or turnover >7.5%.",
+      "WHS injury requiring treatment and 6–15 days off and/or turnover >10%.",
+      "WHS injury/mental health issue requiring treatment with >15 days off and/or turnover >15%.",
+      "Fatality/permanent disability/ill health and/or turnover >20%."
+    ]
+  },
+  {
+    key: "strategic",
+    label: "Strategic",
+    levels: [
+      "Progress/status of OKRs unaffected by incident.",
+      "One or more OKRs at risk for a quarter and/or one or more metrics behind for a month.",
+      "One or more OKRs at risk for a quarter and one or more Health+Hero metrics impacted.",
+      "Strategic reprioritisation of initiatives/resources required.",
+      "Incident triggers immediate review of relevant strategy."
     ]
   }
+];
+
+const state = {
+  mode: null,
+  likelihood: null,
+  driver: null,
+  consequence: null
 };
 
-const prepSeconds = 3;
+function getBand(score) {
+  if (score <= 5) return "Low";
+  if (score <= 10) return "Moderate";
+  if (score <= 15) return "High";
+  return "Extreme";
+}
 
-const presetSelect = document.getElementById("preset");
-const cyclesSelect = document.getElementById("cycles");
-const soundToggle = document.getElementById("sound-toggle");
-const vibrationToggle = document.getElementById("vibration-toggle");
-const startButton = document.getElementById("start");
-const pauseButton = document.getElementById("pause");
-const resetButton = document.getElementById("reset");
-const phaseLabel = document.getElementById("phase-label");
-const countdownLabel = document.getElementById("countdown");
-const cycleCountLabel = document.getElementById("cycle-count");
-const prepLabel = document.getElementById("prep-label");
-const circleInner = document.querySelector(".circle__inner");
+function buildButtons(container, items, onSelect, formatter, selectedValue, selectedBy = "key") {
+  container.innerHTML = "";
+  items.forEach((item, index) => {
+    const button = document.createElement("button");
+    button.className = "button";
+    button.textContent = formatter(item, index);
 
-let audioContext = null;
-let session = null;
-let rafId = null;
-
-function buildCycleOptions() {
-  for (let i = 1; i <= 20; i += 1) {
-    const option = document.createElement("option");
-    option.value = String(i);
-    option.textContent = String(i);
-    if (i === 6) {
-      option.selected = true;
+    const currentValue = selectedBy === "value" ? item.value : item.key;
+    if (selectedValue !== null && selectedValue === currentValue) {
+      button.classList.add("is-selected");
     }
-    cyclesSelect.appendChild(option);
-  }
+
+    button.addEventListener("click", () => onSelect(item));
+    container.appendChild(button);
+  });
 }
 
-function getAudioContext() {
-  if (!audioContext) {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  return audioContext;
+function renderLikelihoodReference() {
+  likelihoodTableBody.innerHTML = "";
+
+  likelihoodScale.forEach((item) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${item.label}</td><td>${item.description}</td>`;
+    likelihoodTableBody.appendChild(row);
+  });
 }
 
-function playTone() {
-  if (!soundToggle.checked) {
+function renderModes() {
+  buildButtons(
+    modeOptions,
+    ratingModes,
+    (mode) => {
+      state.mode = mode;
+      renderModes();
+      updateResult();
+    },
+    (item) => item.label,
+    state.mode ? state.mode.key : null,
+    "key"
+  );
+}
+
+function renderLikelihood() {
+  buildButtons(
+    likelihoodOptions,
+    likelihoodScale,
+    (item) => {
+      state.likelihood = item;
+      renderLikelihood();
+      updateResult();
+      renderMatrix();
+    },
+    (item) => `${item.value}: ${item.label}`,
+    state.likelihood ? state.likelihood.value : null,
+    "value"
+  );
+}
+
+function renderDrivers() {
+  buildButtons(
+    driverOptions,
+    drivers,
+    (driver) => {
+      state.driver = driver;
+      state.consequence = null;
+      renderDrivers();
+      renderConsequences();
+      updateResult();
+      renderMatrix();
+    },
+    (item) => item.label,
+    state.driver ? state.driver.key : null,
+    "key"
+  );
+}
+
+function renderConsequences() {
+  consequenceOptions.innerHTML = "";
+
+  if (!state.driver) {
+    consequenceHint.textContent = "Select a primary driver first.";
     return;
   }
-  const context = getAudioContext();
-  const oscillator = context.createOscillator();
-  const gain = context.createGain();
-  oscillator.type = "sine";
-  oscillator.frequency.value = 432;
-  gain.gain.value = 0.12;
-  oscillator.connect(gain);
-  gain.connect(context.destination);
-  oscillator.start();
-  gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.35);
-  oscillator.stop(context.currentTime + 0.4);
-}
 
-function vibrate() {
-  if (!vibrationToggle.checked) {
-    return;
-  }
-  if (navigator.vibrate) {
-    navigator.vibrate(60);
-  }
-}
+  consequenceHint.textContent = `Consequence table for ${state.driver.label}:`;
 
-function setCircleScale(scale) {
-  circleInner.style.transform = `scale(${scale})`;
-}
-
-function getScaleForPhase(phaseType, progress) {
-  const min = 0.7;
-  const max = 1;
-  if (phaseType === "inhale") {
-    return min + (max - min) * progress;
-  }
-  if (phaseType === "exhale") {
-    return max - (max - min) * progress;
-  }
-  if (phaseType === "hold-high") {
-    return max;
-  }
-  return min;
-}
-
-function updatePhaseDisplay(phase, remainingSeconds) {
-  phaseLabel.textContent = phase.label;
-  countdownLabel.textContent = Math.max(0, Math.ceil(remainingSeconds));
-}
-
-function updateButtons(isRunning) {
-  startButton.disabled = isRunning;
-  pauseButton.disabled = !isRunning;
-  presetSelect.disabled = isRunning;
-  cyclesSelect.disabled = isRunning;
-}
-
-function createSession() {
-  const preset = presets[presetSelect.value];
-  return {
-    preset,
-    cycleTarget: Number(cyclesSelect.value),
-    cycleIndex: 0,
-    phaseIndex: 0,
-    phaseStart: null,
-    prepStart: null,
-    isPaused: false,
-    isRunning: false,
-    elapsedBeforePause: 0
-  };
-}
-
-function startSession() {
-  if (session && session.isRunning) {
-    return;
-  }
-  session = createSession();
-  session.isRunning = true;
-  session.prepStart = performance.now();
-  prepLabel.textContent = `Starting in ${prepSeconds}...`;
-  phaseLabel.textContent = "Prepare";
-  countdownLabel.textContent = prepSeconds;
-  setCircleScale(0.7);
-  updateButtons(true);
-  playTone();
-  vibrate();
-  rafId = requestAnimationFrame(updateLoop);
-}
-
-function pauseSession() {
-  if (!session || !session.isRunning) {
-    return;
-  }
-  session.isPaused = true;
-  session.isRunning = false;
-  session.elapsedBeforePause = performance.now() - (session.phaseStart || performance.now());
-  updateButtons(false);
-  phaseLabel.textContent = "Paused";
-}
-
-function resumeSession() {
-  if (!session || session.isRunning) {
-    return;
-  }
-  session.isPaused = false;
-  session.isRunning = true;
-  session.phaseStart = performance.now() - session.elapsedBeforePause;
-  updateButtons(true);
-  rafId = requestAnimationFrame(updateLoop);
-}
-
-function resetSession() {
-  if (rafId) {
-    cancelAnimationFrame(rafId);
-  }
-  session = null;
-  prepLabel.textContent = "";
-  phaseLabel.textContent = "Ready";
-  countdownLabel.textContent = "0";
-  cycleCountLabel.textContent = "0";
-  setCircleScale(0.7);
-  updateButtons(false);
-}
-
-function advancePhase() {
-  if (!session) {
-    return;
-  }
-  session.phaseIndex += 1;
-  session.phaseStart = performance.now();
-  session.elapsedBeforePause = 0;
-
-  if (session.phaseIndex >= session.preset.phases.length) {
-    session.phaseIndex = 0;
-    session.cycleIndex += 1;
-    cycleCountLabel.textContent = String(session.cycleIndex);
-    if (session.cycleIndex >= session.cycleTarget) {
-      completeSession();
-      return;
+  consequenceLevels.forEach((level, index) => {
+    const item = document.createElement("button");
+    item.className = "level-item";
+    if (state.consequence && state.consequence.value === level.value) {
+      item.classList.add("is-selected");
     }
-  }
-  playTone();
-  vibrate();
+
+    item.innerHTML = `
+      <span class="level-item__title">${level.tag} — ${level.name} (${level.value})</span>
+      <span class="level-item__desc">${state.driver.levels[index]}</span>
+    `;
+
+    item.addEventListener("click", () => {
+      state.consequence = {
+        value: level.value,
+        tag: level.tag,
+        name: level.name,
+        description: state.driver.levels[index]
+      };
+      renderConsequences();
+      updateResult();
+      renderMatrix();
+    });
+
+    consequenceOptions.appendChild(item);
+  });
 }
 
-function completeSession() {
-  session.isRunning = false;
-  updateButtons(false);
-  phaseLabel.textContent = "Complete";
-  countdownLabel.textContent = "0";
-  prepLabel.textContent = "Session complete.";
-  playTone();
-  vibrate();
+function renderMatrix() {
+  const table = document.createElement("table");
+  table.className = "matrix";
+
+  const headRow = document.createElement("tr");
+  const blank = document.createElement("th");
+  blank.textContent = "L × C";
+  headRow.appendChild(blank);
+
+  consequenceLevels.forEach((level) => {
+    const th = document.createElement("th");
+    th.textContent = `${level.tag} (${level.value})`;
+    headRow.appendChild(th);
+  });
+
+  const thead = document.createElement("thead");
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  likelihoodScale
+    .slice()
+    .sort((a, b) => a.value - b.value)
+    .forEach((likelihood) => {
+      const row = document.createElement("tr");
+      const label = document.createElement("th");
+      label.textContent = `${likelihood.value}`;
+      row.appendChild(label);
+
+      consequenceLevels.forEach((consequence) => {
+        const td = document.createElement("td");
+        const score = likelihood.value * consequence.value;
+        td.textContent = String(score);
+        td.dataset.band = getBand(score).toLowerCase();
+
+        const selected =
+          state.likelihood &&
+          state.consequence &&
+          state.likelihood.value === likelihood.value &&
+          state.consequence.value === consequence.value;
+
+        if (selected) {
+          td.classList.add("is-active");
+        }
+
+        row.appendChild(td);
+      });
+
+      tbody.appendChild(row);
+    });
+
+  table.appendChild(tbody);
+  matrixWrap.innerHTML = "";
+  matrixWrap.appendChild(table);
 }
 
-function updateLoop(timestamp) {
-  if (!session || !session.isRunning) {
+function updateResult() {
+  if (!state.mode || !state.likelihood || !state.driver || !state.consequence) {
+    resultSummary.textContent = "Make your selections to calculate a score.";
+    resultScore.textContent = "—";
+    resultBand.textContent = "—";
+    resultDetail.textContent = "—";
     return;
   }
 
-  if (session.prepStart !== null) {
-    const prepElapsed = (timestamp - session.prepStart) / 1000;
-    const remainingPrep = prepSeconds - prepElapsed;
-    if (remainingPrep <= 0) {
-      session.prepStart = null;
-      session.phaseStart = performance.now();
-      playTone();
-      vibrate();
-    } else {
-      prepLabel.textContent = `Starting in ${Math.ceil(remainingPrep)}...`;
-      countdownLabel.textContent = Math.ceil(remainingPrep);
-      rafId = requestAnimationFrame(updateLoop);
-      return;
-    }
-  }
+  const score = state.likelihood.value * state.consequence.value;
+  const band = getBand(score);
 
-  const phase = session.preset.phases[session.phaseIndex];
-  const elapsed = (timestamp - session.phaseStart) / 1000;
-  const remaining = phase.duration - elapsed;
-  const progress = Math.min(Math.max(elapsed / phase.duration, 0), 1);
-  const scale = getScaleForPhase(phase.type, progress);
-
-  setCircleScale(scale);
-  updatePhaseDisplay(phase, remaining);
-
-  if (remaining <= 0) {
-    advancePhase();
-  }
-
-  rafId = requestAnimationFrame(updateLoop);
+  resultSummary.textContent = `${state.mode.label}: ${state.driver.label} driver.`;
+  resultScore.textContent = `Score: ${score} / 25`;
+  resultBand.textContent = `Rating band: ${band}`;
+  resultDetail.textContent = `Likelihood ${state.likelihood.value} (${state.likelihood.label}) × Consequence ${state.consequence.tag} (${state.consequence.name}).`;
 }
 
-startButton.addEventListener("click", () => {
-  if (session && session.isPaused) {
-    resumeSession();
-    return;
-  }
-  startSession();
-});
+function resetAll() {
+  state.mode = null;
+  state.likelihood = null;
+  state.driver = null;
+  state.consequence = null;
+  renderLikelihoodReference();
+  renderModes();
+  renderLikelihood();
+  renderDrivers();
+  renderConsequences();
+  renderMatrix();
+  updateResult();
+}
 
-pauseButton.addEventListener("click", pauseSession);
-resetButton.addEventListener("click", resetSession);
+resetButton.addEventListener("click", resetAll);
 
-presetSelect.addEventListener("change", () => {
-  resetSession();
-});
-
-cyclesSelect.addEventListener("change", () => {
-  resetSession();
-});
-
-buildCycleOptions();
-resetSession();
+resetAll();
